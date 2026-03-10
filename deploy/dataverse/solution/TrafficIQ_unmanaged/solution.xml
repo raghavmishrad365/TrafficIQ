@@ -1,0 +1,118 @@
+<ImportExportXml version="9.2.26014.158" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.26014.158" OrganizationSchemaType="Full" CRMServerServiceabilityVersion="9.2.26021.00152">
+  <SolutionManifest>
+    <UniqueName>TrafficIQ</UniqueName>
+    <LocalizedNames>
+      <LocalizedName description="TrafficIQ" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions>
+      <Description description="TrafficIQ Supply Chain Transport Intelligence - AI-powered multi-agent platform for traffic, fleet, and supply chain operations" languagecode="1033" />
+    </Descriptions>
+    <Version>1.0.0.0</Version>
+    <Managed>0</Managed>
+    <Publisher>
+      <UniqueName>TrafficIQ</UniqueName>
+      <LocalizedNames>
+        <LocalizedName description="TrafficIQ" languagecode="1033" />
+      </LocalizedNames>
+      <Descriptions>
+        <Description description="TrafficIQ Supply Chain Transport Intelligence platform publisher" languagecode="1033" />
+      </Descriptions>
+      <EMailAddress xsi:nil="true"></EMailAddress>
+      <SupportingWebsiteUrl xsi:nil="true"></SupportingWebsiteUrl>
+      <CustomizationPrefix>tiq</CustomizationPrefix>
+      <CustomizationOptionValuePrefix>10048</CustomizationOptionValuePrefix>
+      <Addresses>
+        <Address>
+          <AddressNumber>1</AddressNumber>
+          <AddressTypeCode>1</AddressTypeCode>
+          <City xsi:nil="true"></City>
+          <County xsi:nil="true"></County>
+          <Country xsi:nil="true"></Country>
+          <Fax xsi:nil="true"></Fax>
+          <FreightTermsCode xsi:nil="true"></FreightTermsCode>
+          <ImportSequenceNumber xsi:nil="true"></ImportSequenceNumber>
+          <Latitude xsi:nil="true"></Latitude>
+          <Line1 xsi:nil="true"></Line1>
+          <Line2 xsi:nil="true"></Line2>
+          <Line3 xsi:nil="true"></Line3>
+          <Longitude xsi:nil="true"></Longitude>
+          <Name xsi:nil="true"></Name>
+          <PostalCode xsi:nil="true"></PostalCode>
+          <PostOfficeBox xsi:nil="true"></PostOfficeBox>
+          <PrimaryContactName xsi:nil="true"></PrimaryContactName>
+          <ShippingMethodCode>1</ShippingMethodCode>
+          <StateOrProvince xsi:nil="true"></StateOrProvince>
+          <Telephone1 xsi:nil="true"></Telephone1>
+          <Telephone2 xsi:nil="true"></Telephone2>
+          <Telephone3 xsi:nil="true"></Telephone3>
+          <TimeZoneRuleVersionNumber xsi:nil="true"></TimeZoneRuleVersionNumber>
+          <UPSZone xsi:nil="true"></UPSZone>
+          <UTCOffset xsi:nil="true"></UTCOffset>
+          <UTCConversionTimeZoneCode xsi:nil="true"></UTCConversionTimeZoneCode>
+        </Address>
+        <Address>
+          <AddressNumber>2</AddressNumber>
+          <AddressTypeCode>1</AddressTypeCode>
+          <City xsi:nil="true"></City>
+          <County xsi:nil="true"></County>
+          <Country xsi:nil="true"></Country>
+          <Fax xsi:nil="true"></Fax>
+          <FreightTermsCode xsi:nil="true"></FreightTermsCode>
+          <ImportSequenceNumber xsi:nil="true"></ImportSequenceNumber>
+          <Latitude xsi:nil="true"></Latitude>
+          <Line1 xsi:nil="true"></Line1>
+          <Line2 xsi:nil="true"></Line2>
+          <Line3 xsi:nil="true"></Line3>
+          <Longitude xsi:nil="true"></Longitude>
+          <Name xsi:nil="true"></Name>
+          <PostalCode xsi:nil="true"></PostalCode>
+          <PostOfficeBox xsi:nil="true"></PostOfficeBox>
+          <PrimaryContactName xsi:nil="true"></PrimaryContactName>
+          <ShippingMethodCode>1</ShippingMethodCode>
+          <StateOrProvince xsi:nil="true"></StateOrProvince>
+          <Telephone1 xsi:nil="true"></Telephone1>
+          <Telephone2 xsi:nil="true"></Telephone2>
+          <Telephone3 xsi:nil="true"></Telephone3>
+          <TimeZoneRuleVersionNumber xsi:nil="true"></TimeZoneRuleVersionNumber>
+          <UPSZone xsi:nil="true"></UPSZone>
+          <UTCOffset xsi:nil="true"></UTCOffset>
+          <UTCConversionTimeZoneCode xsi:nil="true"></UTCConversionTimeZoneCode>
+        </Address>
+      </Addresses>
+    </Publisher>
+    <RootComponents>
+      <RootComponent type="1" schemaName="tiq_agentconfiguration" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_appsetting" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_chatmessage" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_chatthread" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_connectivityalert" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_customerasset" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_deliveryroute" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_drivingalert" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_fleetvehicle" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_geofenceevent" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_geofencezone" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_inventoryitem" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_iotdevice" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_maintenancealert" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_maintenancerecord" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_notification" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_returnorder" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_routeoption" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_routestep" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_savedjourney" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_serviceagreement" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_servicerequest" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_shipment" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_supplychainkpi" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_technician" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_trafficincident" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_trafficsummary" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_userpreference" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_vehiclehealth" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_warehouse" behavior="0" />
+      <RootComponent type="1" schemaName="tiq_workorder" behavior="0" />
+    </RootComponents>
+    <MissingDependencies />
+  </SolutionManifest>
+</ImportExportXml>

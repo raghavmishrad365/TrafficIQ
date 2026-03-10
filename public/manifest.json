@@ -1,0 +1,16 @@
+{
+  "name": "Traffic Info DK",
+  "short_name": "TrafficDK",
+  "description": "Real-time Danish traffic information and journey planning",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0078D4",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

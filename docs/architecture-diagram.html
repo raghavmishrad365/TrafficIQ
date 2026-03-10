@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrafficIQ — System Architecture Diagram</title>
+  <style>
+    :root {
+      --bg:        #071527;
+      --bg-grad:   linear-gradient(165deg, #081830 0%, #071020 60%, #040d18 100%);
+      --azure-bd:  rgba(0, 149, 255, 0.50);
+      --azure-hd:  rgba(0, 100, 200, 0.22);
+      --tier-bd:   rgba(100, 160, 255, 0.18);
+      --row-bg:    rgba(255, 255, 255, 0.035);
+      --row-bd:    rgba(255, 255, 255, 0.07);
+      --text:      #d8eeff;
+      --muted:     #6a94bc;
+      --arrow:     #4ba3e8;
+      --head-txt:  #60c0ff;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
+      background: var(--bg-grad);
+      background-attachment: fixed;
+      color: var(--text);
+      font-size: 12px;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .hdr {
+      background: rgba(0, 30, 70, 0.80);
+      border-bottom: 1px solid var(--azure-bd);
+      padding: 14px 28px;
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .hdr h1 { font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
+    .hdr p  { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+    /* ── Canvas ── */
+    .canvas { padding: 22px 28px 32px; }
+
+    /* ══════════════════════════════════════
+       TIER SECTIONS
+    ══════════════════════════════════════ */
+    .tier {
+      border: 1px solid var(--tier-bd);
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.18);
+    }
+    .tier-hd {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 18px;
+      border-bottom: 1px solid var(--tier-bd);
+      background: rgba(0, 20, 60, 0.30);
+      border-radius: 12px 12px 0 0;
+    }
+    .tier-num {
+      font-size: 10px; font-weight: 900;
+      color: var(--head-txt);
+      background: rgba(0, 120, 255, 0.18);
+      border: 1px solid rgba(0, 120, 255, 0.35);
+      border-radius: 5px;
+      padding: 2px 7px;
+    }
+    .tier-title {
+      font-size: 13px; font-weight: 700;
+      color: var(--head-txt);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .tier-sub { font-size: 10px; color: var(--muted); margin-left: auto; }
+    .tier-body {
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    /* ── Tier connector arrow ── */
+    .t-arrow {
+      height: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 4px 0 4px 80px;
+    }
+    .t-arrow .tl { width: 2px; flex: 1; background: var(--arrow); }
+    .t-arrow .tt {
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 7px solid var(--arrow);
+    }
+
+    /* ══════════════════════════════════════
+       INODE COMPONENT
+    ══════════════════════════════════════ */
+    .inode {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 5px; flex-shrink: 0;
+    }
+    .ibox {
+      width: 52px; height: 52px; border-radius: 11px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; flex-shrink: 0;
+    }
+    .ibox img { width: 100%; height: 100%; object-fit: contain; padding: 7px; }
+    .ibox .init { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.9); text-align: center; }
+    .lbl { font-size: 11px; color: var(--text); text-align: center; max-width: 72px; line-height: 1.35; }
+    .sub { font-size: 9px;  color: var(--muted); text-align: center; max-width: 72px; margin-top: -2px; }
+
+    .inode.sm .ibox  { width: 42px; height: 42px; border-radius: 9px; }
+    .inode.sm .ibox .init { font-size: 9px; }
+    .inode.sm .lbl   { font-size: 10px; max-width: 56px; }
+    .inode.sm .sub   { font-size: 8.5px; max-width: 56px; }
+
+    .inode.xs .ibox  { width: 34px; height: 34px; border-radius: 7px; }
+    .inode.xs .ibox .init { font-size: 8px; }
+    .inode.xs .lbl   { font-size: 9.5px; max-width: 50px; }
+
+    .inode.lg .ibox  { width: 62px; height: 62px; border-radius: 13px; border-width: 2px; }
+    .inode.lg .lbl   { font-size: 12px; font-weight: 700; max-width: 84px; }
+    .inode.lg .sub   { max-width: 84px; }
+
+    /* ══════════════════════════════════════
+       DETAIL CARDS
+    ══════════════════════════════════════ */
+    .dcard {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(100, 160, 255, 0.15);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .dcard-hd { display: flex; align-items: center; gap: 9px; }
+    .dcard-title { font-size: 12px; font-weight: 700; color: var(--text); }
+    .dcard-sub   { font-size: 10px; color: var(--muted); }
+    .dcard-row   { font-size: 10px; color: #8aabc8; margin-top: 1px; }
+
+    /* ══════════════════════════════════════
+       VERTICAL SEPARATOR
+    ══════════════════════════════════════ */
+    .vsep {
+      width: 1px; align-self: stretch;
+      background: rgba(100, 160, 255, 0.12);
+      flex-shrink: 0;
+    }
+
+    /* ══════════════════════════════════════
+       TIER 1  —  PAGE CHIPS
+    ══════════════════════════════════════ */
+    .chip-grid { display: flex; gap: 5px; flex-wrap: wrap; max-width: 400px; }
+    .chip {
+      font-size: 9.5px; border-radius: 4px;
+      padding: 2px 8px; color: #fff; opacity: 0.85;
+    }
+
+    /* ══════════════════════════════════════
+       TIER 2  —  AGENT CARDS
+    ══════════════════════════════════════ */
+    .agents-row { display: flex; gap: 9px; flex-wrap: wrap; flex: 1; }
+    .agent-card {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 10px;
+      padding: 10px 10px 8px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 5px;
+      min-width: 108px;
+    }
+    .agent-card .lbl { font-weight: 700; }
+    .agent-stack {
+      display: flex; gap: 4px; flex-wrap: wrap;
+      justify-content: center; margin-top: 3px;
+    }
+    .agent-chip {
+      font-size: 8.5px; border-radius: 4px;
+      padding: 1px 5px; opacity: 0.9;
+    }
+
+    /* Orchestrator routing panel */
+    .orch-box {
+      background: rgba(100, 50, 180, 0.12);
+      border: 1px solid rgba(100, 60, 200, 0.30);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 7px;
+      min-width: 190px;
+    }
+    .orch-route { display: flex; align-items: center; gap: 6px; }
+    .orch-step {
+      font-size: 9.5px; color: var(--muted);
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 4px; padding: 2px 7px;
+    }
+    .harrow { font-size: 13px; color: var(--arrow); flex-shrink: 0; }
+
+    /* ══════════════════════════════════════
+       MESSAGE LIFECYCLE
+    ══════════════════════════════════════ */
+    .flow-steps {
+      display: flex; align-items: center;
+      gap: 3px; overflow-x: auto; padding: 4px 0;
+    }
+    .flow-step {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(100,160,255,0.20);
+      border-radius: 8px;
+      padding: 8px 12px; text-align: center;
+      min-width: 110px; flex-shrink: 0;
+    }
+    .step-num { font-size: 9px; color: var(--muted); margin-bottom: 3px; }
+    .step-lbl { font-size: 11px; font-weight: 700; }
+    .step-sub { font-size: 9px; color: var(--muted); margin-top: 2px; }
+    .step-arrow { font-size: 20px; color: var(--arrow); flex-shrink: 0; }
+
+    /* ══════════════════════════════════════
+       ENV VARS
+    ══════════════════════════════════════ */
+    .env-section {
+      background: rgba(0,0,0,0.20);
+      border: 1px solid var(--tier-bd);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-top: 20px;
+    }
+    .env-title { font-size: 12px; font-weight: 700; color: var(--head-txt); margin-bottom: 10px; }
+    .env-row { display: flex; gap: 10px; margin-bottom: 5px; align-items: baseline; }
+    .env-tag {
+      font-size: 9.5px; font-weight: 700; border-radius: 4px;
+      padding: 1px 7px; flex-shrink: 0;
+    }
+    .env-list { font-size: 10px; color: #8aabc8; }
+
+    /* ══════════════════════════════════════
+       LEGEND
+    ══════════════════════════════════════ */
+    .legend {
+      display: flex; gap: 16px; flex-wrap: wrap;
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: rgba(0,0,0,0.20);
+      border: 1px solid var(--tier-bd);
+      border-radius: 10px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+  <!-- ════════════════ HEADER ════════════════ -->
+  <header class="hdr">
+    <div>
+      <h1>TrafficIQ — System Architecture Diagram</h1>
+      <p>5-tier architecture · React 19 + TypeScript 5.9 · Azure AI Foundry · 6 Specialist Agents · Multi-Agent Orchestrator · Dynamics 365 · Power Platform</p>
+    </div>
+  </header>
+
+  <div class="canvas">
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- TIER 1 — FRONTEND / USER LAYER                    -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div class="tier">
+      <div class="tier-hd">
+        <span class="tier-num">T1</span>
+        <span class="tier-title">Frontend &amp; User Layer</span>
+        <span class="tier-sub">React 19 · TypeScript 5.9 · Vite 7 · Fluent UI v9 · Azure Maps SDK 3.5</span>
+      </div>
+      <div class="tier-body">
+
+        <!-- SPA + Power Apps -->
+        <div class="inode lg">
+          <div class="ibox" style="background:#133360">
+            <img src="icons/browser.svg" alt="React SPA">
+          </div>
+          <span class="lbl">React SPA</span>
+          <span class="sub">Azure SWA · CDN</span>
+        </div>
+
+        <div class="inode lg">
+          <div class="ibox" style="background:#3a1240">
+            <img src="icons/power-apps.svg" alt="Power Apps">
+          </div>
+          <span class="lbl">Power Apps</span>
+          <span class="sub">Embedded mode</span>
+        </div>
+
+        <div class="vsep"></div>
+
+        <!-- 16 Pages -->
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px">16 Pages</span>
+          <div class="chip-grid">
+            <span class="chip" style="background:#0c2850">Home</span>
+            <span class="chip" style="background:#0c2850">Journey</span>
+            <span class="chip" style="background:#0c2850">TrafficMap</span>
+            <span class="chip" style="background:#082010">Fleet</span>
+            <span class="chip" style="background:#082010">Inventory</span>
+            <span class="chip" style="background:#082010">Shipments</span>
+            <span class="chip" style="background:#301200">FleetDashboard</span>
+            <span class="chip" style="background:#180c30">Operations</span>
+            <span class="chip" style="background:#002018">FieldService</span>
+            <span class="chip" style="background:#001820">IoTDashboard</span>
+            <span class="chip" style="background:#0c2850">Chat</span>
+            <span class="chip" style="background:#0c2850">Notifications</span>
+            <span class="chip" style="background:#0c2850">Saved</span>
+            <span class="chip" style="background:#0c2850">Settings</span>
+            <span class="chip" style="background:#0c2850">DataEntry</span>
+            <span class="chip" style="background:#0c2850">Admin</span>
+          </div>
+        </div>
+
+        <div class="vsep"></div>
+
+        <!-- Components + Contexts -->
+        <div style="display:flex;flex-direction:row;gap:8px;flex-wrap:wrap">
+
+          <div class="dcard" style="border-color:rgba(100,180,255,0.25);flex:1;min-width:180px">
+            <div class="dcard-hd">
+              <div class="inode xs" style="margin:0">
+                <div class="ibox" style="background:#0c2d60;border-color:#3080cc">
+                  <img src="icons/copilot-studio.svg" alt="TRAFI AI">
+                </div>
+              </div>
+              <div>
+                <div class="dcard-title">TRAFI Chat Panel</div>
+                <div class="dcard-sub">ChatPanel · ChatMessage · MessageCard</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dcard" style="border-color:rgba(0,120,212,0.25);flex:1;min-width:180px">
+            <div class="dcard-hd">
+              <div class="inode xs" style="margin:0">
+                <div class="ibox" style="background:#0a2040">
+                  <img src="icons/azure-maps.svg" alt="Azure Maps">
+                </div>
+              </div>
+              <div>
+                <div class="dcard-title">Map Components</div>
+                <div class="dcard-sub">TrafficMap · MapControls · Layers · Routing</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dcard" style="border-color:rgba(100,160,255,0.12);flex:1;min-width:180px">
+            <div class="dcard-hd">
+              <div>
+                <div class="dcard-title">React Contexts</div>
+                <div class="dcard-sub">Chat · Journey · MapSettings · Notification · UI</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="t-arrow"><div class="tl"></div><div class="tt"></div></div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- TIER 2 — MULTI-AGENT ORCHESTRATOR                 -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div class="tier">
+      <div class="tier-hd">
+        <span class="tier-num">T2</span>
+        <span class="tier-title">Multi-Agent Orchestrator</span>
+        <span class="tier-sub">3-tier routing · 6 Specialist Agents · Azure AI Foundry Assistants API</span>
+      </div>
+      <div class="tier-body">
+
+        <!-- Orchestrator node + routing info -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+          <div class="inode lg">
+            <div class="ibox" style="background:#18083a;border-color:#6840b0">
+              <img src="icons/agent365.svg" alt="Orchestrator">
+            </div>
+            <span class="lbl" style="color:#9868e8">MultiAgent<br>Orchestrator</span>
+          </div>
+          <div class="orch-box">
+            <div class="orch-route">
+              <span class="orch-step">1 Sticky</span>
+              <span class="harrow">→</span>
+              <span class="orch-step">2 Keyword</span>
+              <span class="harrow">→</span>
+              <span class="orch-step">3 LLM Router</span>
+            </div>
+            <div style="font-size:9px;color:var(--muted)">RouterAgent → <code style="color:#9868e8">route_to_agent</code> tool via Foundry</div>
+          </div>
+        </div>
+
+        <div class="vsep"></div>
+
+        <!-- 6 Agent cards -->
+        <div class="agents-row">
+
+          <div class="agent-card" style="border:1px solid #0078D4">
+            <div class="inode sm" style="margin:0">
+              <div class="ibox" style="background:#0c2850;border:2px solid #0078D4">
+                <img src="icons/azure-maps.svg" alt="Traffic">
+              </div>
+              <span class="lbl" style="color:#4aa8ff;font-weight:700">Traffic</span>
+              <span class="sub">17 tools</span>
+            </div>
+            <div class="agent-stack">
+              <span class="agent-chip" style="background:rgba(0,120,212,0.2);color:#58a6ff">Azure Maps</span>
+              <span class="agent-chip" style="background:rgba(100,50,180,0.2);color:#bc8cff">Dataverse</span>
+            </div>
+          </div>
+
+          <div class="agent-card" style="border:1px solid #107C10">
+            <div class="inode sm" style="margin:0">
+              <div class="ibox" style="background:#082010;border:2px solid #107C10">
+                <img src="icons/d365-supply-chain.svg" alt="Supply Chain">
+              </div>
+              <span class="lbl" style="color:#50cc50;font-weight:700">Supply Chain</span>
+              <span class="sub">11 tools</span>
+            </div>
+            <div class="agent-stack">
+              <span class="agent-chip" style="background:rgba(16,124,16,0.2);color:#3fb950">D365 F&amp;O</span>
+              <span class="agent-chip" style="background:rgba(0,120,212,0.2);color:#58a6ff">Maps</span>
+            </div>
+          </div>
+
+          <div class="agent-card" style="border:1px solid #CA5010">
+            <div class="inode sm" style="margin:0">
+              <div class="ibox" style="background:#301200;border:2px solid #CA5010">
+                <img src="icons/d365-fo.svg" alt="Fleet">
+              </div>
+              <span class="lbl" style="color:#e07030;font-weight:700">Fleet</span>
+              <span class="sub">7 tools</span>
+            </div>
+            <div class="agent-stack">
+              <span class="agent-chip" style="background:rgba(14,86,108,0.3);color:#56d4dd">IoT Hub</span>
+              <span class="agent-chip" style="background:rgba(16,124,16,0.2);color:#3fb950">D365</span>
+            </div>
+          </div>
+
+          <div class="agent-card" style="border:1px solid #8764B8">
+            <div class="inode sm" style="margin:0">
+              <div class="ibox" style="background:#180c30;border:2px solid #8764B8">
+                <img src="icons/dynamics-365.svg" alt="Operations">
+              </div>
+              <span class="lbl" style="color:#9870d8;font-weight:700">Operations</span>
+              <span class="sub">7 tools</span>
+            </div>
+            <div class="agent-stack">
+              <span class="agent-chip" style="background:rgba(16,124,16,0.2);color:#3fb950">D365 F&amp;O</span>
+              <span class="agent-chip" style="background:rgba(100,50,180,0.2);color:#bc8cff">Dataverse</span>
+            </div>
+          </div>
+
+          <div class="agent-card" style="border:1px solid #008575">
+            <div class="inode sm" style="margin:0">
+              <div class="ibox" style="background:#002018;border:2px solid #008575">
+                <img src="icons/d365-field-service.svg" alt="Field Service">
+              </div>
+              <span class="lbl" style="color:#30c0a0;font-weight:700">Field Svc</span>
+              <span class="sub">7 tools</span>
+            </div>
+            <div class="agent-stack">
+              <span class="agent-chip" style="background:rgba(16,124,16,0.2);color:#3fb950">D365 FS</span>
+              <span class="agent-chip" style="background:rgba(0,120,212,0.2);color:#58a6ff">Maps</span>
+            </div>
+          </div>
+
+          <div class="agent-card" style="border:1px solid #0E566C">
+            <div class="inode sm" style="margin:0">
+              <div class="ibox" style="background:#001820;border:2px solid #0E566C">
+                <img src="icons/iot-hub.svg" alt="IoT">
+              </div>
+              <span class="lbl" style="color:#2898b8;font-weight:700">IoT &amp; Logistics</span>
+              <span class="sub">7 tools</span>
+            </div>
+            <div class="agent-stack">
+              <span class="agent-chip" style="background:rgba(14,86,108,0.3);color:#56d4dd">IoT Hub</span>
+              <span class="agent-chip" style="background:rgba(16,124,16,0.2);color:#3fb950">D365</span>
+            </div>
+          </div>
+
+        </div><!-- /agents-row -->
+
+        <div class="vsep"></div>
+
+        <!-- AI Foundry -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+          <div class="inode lg">
+            <div class="ibox" style="background:#20083a;border-color:#5C1FC4">
+              <img src="icons/ai-foundry.svg" alt="Azure AI Foundry">
+            </div>
+            <span class="lbl" style="color:#a080e8">Azure AI Foundry</span>
+            <span class="sub">GPT-4.1 · GPT-4.1-mini</span>
+          </div>
+          <div style="font-size:9px;color:var(--muted);text-align:center;max-width:96px">Assistants API<br>Threads · Runs<br>Tool Calls · Stream</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="t-arrow"><div class="tl"></div><div class="tt"></div></div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- TIER 3 — SERVICE CLIENT LAYER                     -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div class="tier">
+      <div class="tier-hd">
+        <span class="tier-num">T3</span>
+        <span class="tier-title">Service Client Layer</span>
+        <span class="tier-sub">TypeScript service clients · Dual-mode: real API / mock data fallback</span>
+      </div>
+      <div class="tier-body" style="flex-wrap:wrap;gap:12px">
+
+        <div class="dcard" style="border-color:rgba(100,50,180,0.35);flex:1;min-width:170px">
+          <div class="dcard-hd">
+            <div class="inode xs" style="margin:0">
+              <div class="ibox" style="background:#20083a">
+                <img src="icons/ai-foundry.svg" alt="AI Foundry">
+              </div>
+            </div>
+            <div>
+              <div class="dcard-title" style="color:#bc8cff">FoundryAgentBase</div>
+              <div class="dcard-sub">/assistants /threads /runs</div>
+            </div>
+          </div>
+          <div class="dcard-row">Assistants API + tool dispatch loop</div>
+        </div>
+
+        <div class="dcard" style="border-color:rgba(16,124,16,0.35);flex:1;min-width:170px">
+          <div class="dcard-hd">
+            <div class="inode xs" style="margin:0">
+              <div class="ibox" style="background:#002820">
+                <img src="icons/d365-fo.svg" alt="D365">
+              </div>
+            </div>
+            <div>
+              <div class="dcard-title" style="color:#3fb950">d365McpClient</div>
+              <div class="dcard-sub">/api/d365-mcp/* proxy</div>
+            </div>
+          </div>
+          <div class="dcard-row">Shipments · Inventory · Fleet · WOs</div>
+        </div>
+
+        <div class="dcard" style="border-color:rgba(14,86,108,0.45);flex:1;min-width:170px">
+          <div class="dcard-hd">
+            <div class="inode xs" style="margin:0">
+              <div class="ibox" style="background:#001c28">
+                <img src="icons/iot-hub.svg" alt="IoT Hub">
+              </div>
+            </div>
+            <div>
+              <div class="dcard-title" style="color:#56d4dd">iotHubClient</div>
+              <div class="dcard-sub">/api/iot-hub/* proxy</div>
+            </div>
+          </div>
+          <div class="dcard-row">Devices · Geofences · Telemetry</div>
+        </div>
+
+        <div class="dcard" style="border-color:rgba(240,136,62,0.35);flex:1;min-width:170px">
+          <div class="dcard-hd">
+            <div class="inode xs" style="margin:0">
+              <div class="ibox" style="background:#2a0830">
+                <img src="icons/dataverse.svg" alt="Dataverse">
+              </div>
+            </div>
+            <div>
+              <div class="dcard-title" style="color:#f0883e">dataverseClient</div>
+              <div class="dcard-sub">/api/dataverse/* proxy</div>
+            </div>
+          </div>
+          <div class="dcard-row">3 modes: SDK · REST API · localStorage</div>
+        </div>
+
+        <div class="dcard" style="border-color:rgba(0,120,212,0.28);flex:1;min-width:170px">
+          <div class="dcard-hd">
+            <div class="inode xs" style="margin:0">
+              <div class="ibox" style="background:#0d1040">
+                <img src="icons/azure-openai.svg" alt="Azure OpenAI">
+              </div>
+            </div>
+            <div>
+              <div class="dcard-title" style="color:#58a6ff">azureOpenAIService</div>
+              <div class="dcard-sub">Chat Completions API</div>
+            </div>
+          </div>
+          <div class="dcard-row">Summaries · Morning briefings</div>
+        </div>
+
+        <div class="dcard" style="border-color:rgba(0,100,180,0.28);flex:1;min-width:170px">
+          <div class="dcard-hd">
+            <div class="inode xs" style="margin:0">
+              <div class="ibox" style="background:#001840">
+                <img src="icons/power-automate.svg" alt="Power Automate">
+              </div>
+            </div>
+            <div>
+              <div class="dcard-title" style="color:#4db8ff">emailService</div>
+              <div class="dcard-sub">HTTP trigger POST</div>
+            </div>
+          </div>
+          <div class="dcard-row">Power Automate email notification flows</div>
+        </div>
+
+        <div class="dcard" style="border-color:rgba(0,120,212,0.28);flex:1;min-width:170px">
+          <div class="dcard-hd">
+            <div class="inode xs" style="margin:0">
+              <div class="ibox" style="background:#0a2040">
+                <img src="icons/azure-maps.svg" alt="Azure Maps SDK">
+              </div>
+            </div>
+            <div>
+              <div class="dcard-title" style="color:#58a6ff">Azure Maps SDK</div>
+              <div class="dcard-sub">Direct REST calls</div>
+            </div>
+          </div>
+          <div class="dcard-row">Routes · Geocode · Traffic · Waypoint TSP</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="t-arrow"><div class="tl"></div><div class="tt"></div></div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- TIER 4 — HOSTING & PROXY                          -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div class="tier">
+      <div class="tier-hd">
+        <span class="tier-num">T4</span>
+        <span class="tier-title">Hosting &amp; Proxy Layer</span>
+        <span class="tier-sub">Azure Static Web Apps · Azure Functions · Vite build plugins · Security headers</span>
+      </div>
+      <div class="tier-body" style="flex-wrap:wrap;gap:14px">
+
+        <div class="dcard" style="border-color:rgba(0,120,212,0.38);min-width:230px">
+          <div class="dcard-hd">
+            <div class="inode xs" style="margin:0">
+              <div class="ibox" style="background:#0a2a50">
+                <img src="icons/static-web-apps.svg" alt="SWA">
+              </div>
+            </div>
+            <div>
+              <div class="dcard-title" style="color:#58a6ff">Azure Static Web Apps</div>
+              <div class="dcard-sub">CDN + Serverless Hosting</div>
+            </div>
+          </div>
+          <div class="dcard-row">/api/* → Azure Functions</div>
+          <div class="dcard-row">/* → SPA fallback (index.html)</div>
+          <div class="dcard-row" style="color:var(--muted)">appLocation: "." · outputLocation: "dist/"</div>
+        </div>
+
+        <div class="dcard" style="border-color:rgba(0,120,212,0.38);min-width:230px">
+          <div class="dcard-hd">
+            <div class="inode xs" style="margin:0">
+              <div class="ibox" style="background:#3a1800">
+                <img src="icons/functions.svg" alt="Functions">
+              </div>
+            </div>
+            <div>
+              <div class="dcard-title" style="color:#58a6ff">Azure Functions</div>
+              <div class="dcard-sub">Dataverse OAuth2 Proxy</div>
+            </div>
+          </div>
+          <div class="dcard-row">client_credentials → access token → Dataverse v9.2</div>
+          <div class="dcard-row" style="color:var(--muted)">apiLocation: "deploy/api/"</div>
+        </div>
+
+        <div class="dcard" style="border-color:rgba(100,100,255,0.28);min-width:230px">
+          <div class="dcard-hd">
+            <div>
+              <div class="dcard-title" style="color:#a5b4fc">Vite Build Plugins</div>
+              <div class="dcard-sub">Build-time configuration injection</div>
+            </div>
+          </div>
+          <div class="dcard-row">keyVaultPlugin — Key Vault secrets → import.meta.env</div>
+          <div class="dcard-row">dataverseProxy — dev-time REST proxy</div>
+          <div class="dcard-row">powerAppsPlugin — embedded mode setup</div>
+        </div>
+
+        <div class="dcard" style="border-color:rgba(80,80,100,0.30);min-width:210px">
+          <div class="dcard-hd">
+            <div class="inode xs" style="margin:0">
+              <div class="ibox" style="background:#0a2a5a">
+                <img src="icons/entra-id.svg" alt="Entra ID">
+              </div>
+            </div>
+            <div>
+              <div class="dcard-title">Auth Patterns</div>
+              <div class="dcard-sub">Multiple credential strategies</div>
+            </div>
+          </div>
+          <div class="dcard-row">DefaultAzureCredential — Key Vault</div>
+          <div class="dcard-row">OAuth2 client_credentials — Dataverse</div>
+          <div class="dcard-row">API Key — OpenAI · Foundry · Maps</div>
+          <div class="dcard-row">SAS Token — IoT Hub</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="t-arrow"><div class="tl"></div><div class="tt"></div></div>
+
+    <!-- ══════════════════════════════════════════════════ -->
+    <!-- TIER 5 — AZURE & MICROSOFT CLOUD SERVICES         -->
+    <!-- ══════════════════════════════════════════════════ -->
+    <div class="tier">
+      <div class="tier-hd">
+        <span class="tier-num">T5</span>
+        <span class="tier-title">Azure &amp; Microsoft Cloud Services</span>
+        <span class="tier-sub">Azure AI · Azure Platform · Dynamics 365 · Power Platform</span>
+      </div>
+      <div class="tier-body" style="flex-direction:column;gap:14px;align-items:stretch">
+
+        <!-- Row 1: AI + Infrastructure -->
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+
+          <div class="dcard" style="border-color:rgba(100,50,180,0.40);flex:1;min-width:200px">
+            <div class="dcard-hd">
+              <div class="inode xs" style="margin:0">
+                <div class="ibox" style="background:#20083a">
+                  <img src="icons/ai-foundry.svg" alt="AI Foundry">
+                </div>
+              </div>
+              <div>
+                <div class="dcard-title" style="color:#bc8cff">Azure AI Foundry</div>
+                <div class="dcard-sub">Model hosting &amp; Assistants API</div>
+              </div>
+            </div>
+            <div class="dcard-row" style="color:#bc8cff">GPT-4.1 / GPT-4.1-mini deployments</div>
+            <div class="dcard-row">Threads · Runs · Messages · Tool Calls · Streaming</div>
+          </div>
+
+          <div class="dcard" style="border-color:rgba(0,120,212,0.30);flex:1;min-width:200px">
+            <div class="dcard-hd">
+              <div class="inode xs" style="margin:0">
+                <div class="ibox" style="background:#0d1040">
+                  <img src="icons/azure-openai.svg" alt="Azure OpenAI">
+                </div>
+              </div>
+              <div>
+                <div class="dcard-title" style="color:#58a6ff">Azure OpenAI Service</div>
+                <div class="dcard-sub">Chat Completions API</div>
+              </div>
+            </div>
+            <div class="dcard-row" style="color:#58a6ff">Non-agentic summaries &amp; briefings</div>
+            <div class="dcard-row">cognitiveservices.azure.com endpoint</div>
+          </div>
+
+          <div class="dcard" style="border-color:rgba(0,120,212,0.30);flex:1;min-width:190px">
+            <div class="dcard-hd">
+              <div class="inode xs" style="margin:0">
+                <div class="ibox" style="background:#0a2040">
+                  <img src="icons/azure-maps.svg" alt="Azure Maps">
+                </div>
+              </div>
+              <div>
+                <div class="dcard-title" style="color:#58a6ff">Azure Maps</div>
+                <div class="dcard-sub">Location Intelligence</div>
+              </div>
+            </div>
+            <div class="dcard-row" style="color:#58a6ff">Routes · Traffic · Geocoding</div>
+            <div class="dcard-row">Waypoint TSP · Truck routing</div>
+          </div>
+
+          <div class="dcard" style="border-color:rgba(14,86,108,0.45);flex:1;min-width:190px">
+            <div class="dcard-hd">
+              <div class="inode xs" style="margin:0">
+                <div class="ibox" style="background:#001c28">
+                  <img src="icons/iot-hub.svg" alt="IoT Hub">
+                </div>
+              </div>
+              <div>
+                <div class="dcard-title" style="color:#56d4dd">Azure IoT Hub</div>
+                <div class="dcard-sub">Device Management &amp; Telemetry</div>
+              </div>
+            </div>
+            <div class="dcard-row" style="color:#56d4dd">Device twins · GPS tracking</div>
+            <div class="dcard-row">Geofences · Driving behavior alerts</div>
+          </div>
+
+          <div class="dcard" style="border-color:rgba(63,185,80,0.32);flex:1;min-width:170px">
+            <div class="dcard-hd">
+              <div class="inode xs" style="margin:0">
+                <div class="ibox" style="background:#5a0808">
+                  <img src="icons/key-vault.svg" alt="Key Vault">
+                </div>
+              </div>
+              <div>
+                <div class="dcard-title" style="color:#3fb950">Azure Key Vault</div>
+                <div class="dcard-sub">Secret Management</div>
+              </div>
+            </div>
+            <div class="dcard-row" style="color:#3fb950">Build-time secret injection</div>
+            <div class="dcard-row">DefaultAzureCredential</div>
+          </div>
+
+        </div>
+
+        <!-- Row 2: Enterprise / Power Platform -->
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+
+          <div class="dcard" style="border-color:rgba(16,124,16,0.38);flex:2;min-width:280px">
+            <div class="dcard-hd">
+              <div class="inode xs" style="margin:0">
+                <div class="ibox" style="background:#002820">
+                  <img src="icons/d365-fo.svg" alt="D365 F&O">
+                </div>
+              </div>
+              <div>
+                <div class="dcard-title" style="color:#3fb950">Dynamics 365 Finance &amp; Operations</div>
+                <div class="dcard-sub">Enterprise ERP — MCP Server</div>
+              </div>
+            </div>
+            <div class="dcard-row" style="color:#3fb950">WHSShipmentTable · InventLocationEntity · InventOnHandEntity</div>
+            <div class="dcard-row">Warehouses · Shipments · Inventory · Fleet · Work Orders · Returns · KPIs</div>
+            <div class="dcard-row" style="color:var(--muted)">MCP: data_find_entity_type · data_get_entity_metadata · data_find / create / update_entities</div>
+          </div>
+
+          <div class="dcard" style="border-color:rgba(240,136,62,0.32);flex:1;min-width:210px">
+            <div class="dcard-hd">
+              <div class="inode xs" style="margin:0">
+                <div class="ibox" style="background:#2a0830">
+                  <img src="icons/dataverse.svg" alt="Dataverse">
+                </div>
+              </div>
+              <div>
+                <div class="dcard-title" style="color:#f0883e">Dataverse / Power Platform</div>
+                <div class="dcard-sub">Data persistence &amp; CRM (20+ tables)</div>
+              </div>
+            </div>
+            <div class="dcard-row" style="color:#f0883e">tiq_trafficincident · tiq_savedjourney · tiq_vehicle</div>
+            <div class="dcard-row">tiq_userpreference · tiq_notification · tiq_routehistory</div>
+            <div class="dcard-row" style="color:var(--muted)">tiq_shipment · tiq_inventory · tiq_workorder · +11 more</div>
+          </div>
+
+          <div class="dcard" style="border-color:rgba(0,100,180,0.30);flex:1;min-width:175px">
+            <div class="dcard-hd">
+              <div class="inode xs" style="margin:0">
+                <div class="ibox" style="background:#001840">
+                  <img src="icons/power-automate.svg" alt="Power Automate">
+                </div>
+              </div>
+              <div>
+                <div class="dcard-title" style="color:#4db8ff">Power Automate</div>
+                <div class="dcard-sub">Workflow Automation</div>
+              </div>
+            </div>
+            <div class="dcard-row" style="color:#4db8ff">Email notification flows</div>
+            <div class="dcard-row">Traffic delay alerts</div>
+            <div class="dcard-row">Shipment status updates</div>
+          </div>
+
+          <div class="dcard" style="border-color:rgba(240,100,80,0.28);flex:1;min-width:165px">
+            <div class="dcard-hd">
+              <div class="inode xs" style="margin:0">
+                <div class="ibox" style="background:#3a1240">
+                  <img src="icons/power-apps.svg" alt="Power Apps">
+                </div>
+              </div>
+              <div>
+                <div class="dcard-title" style="color:#f885aa">Power Apps</div>
+                <div class="dcard-sub">Model-driven App</div>
+              </div>
+            </div>
+            <div class="dcard-row">@microsoft/power-apps SDK</div>
+            <div class="dcard-row">Vite plugin integration</div>
+            <div class="dcard-row">3 connection modes</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Chat Message Lifecycle ── -->
+    <div style="margin-top:20px">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 18px;border:1px solid var(--tier-bd);border-radius:10px 10px 0 0;background:rgba(0,20,60,0.30)">
+        <span style="font-size:12px;font-weight:700;color:var(--head-txt);text-transform:uppercase;letter-spacing:0.6px">Chat Message Lifecycle</span>
+        <span style="font-size:10px;color:var(--muted);margin-left:auto">End-to-end AI agent interaction flow</span>
+      </div>
+      <div style="border:1px solid var(--tier-bd);border-top:none;border-radius:0 0 10px 10px;padding:16px 18px;background:rgba(0,0,0,0.15)">
+        <div class="flow-steps">
+          <div class="flow-step" style="border-color:rgba(0,120,212,0.38)">
+            <div class="step-num">Step 1</div>
+            <div class="step-lbl" style="color:#58a6ff">User Message</div>
+            <div class="step-sub">ChatPanel input</div>
+          </div>
+          <span class="step-arrow">→</span>
+          <div class="flow-step" style="border-color:rgba(100,50,180,0.38)">
+            <div class="step-num">Step 2</div>
+            <div class="step-lbl" style="color:#bc8cff">Route Message</div>
+            <div class="step-sub">3-tier routing</div>
+          </div>
+          <span class="step-arrow">→</span>
+          <div class="flow-step" style="border-color:rgba(63,185,80,0.38)">
+            <div class="step-num">Step 3</div>
+            <div class="step-lbl" style="color:#3fb950">Agent Executes</div>
+            <div class="step-sub">Foundry API run</div>
+          </div>
+          <span class="step-arrow">→</span>
+          <div class="flow-step" style="border-color:rgba(240,136,62,0.38)">
+            <div class="step-num">Step 4</div>
+            <div class="step-lbl" style="color:#f0883e">Tool Calls</div>
+            <div class="step-sub">requires_action</div>
+          </div>
+          <span class="step-arrow">→</span>
+          <div class="flow-step" style="border-color:rgba(0,120,212,0.38)">
+            <div class="step-num">Step 5</div>
+            <div class="step-lbl" style="color:#58a6ff">Azure APIs</div>
+            <div class="step-sub">Maps · D365 · IoT</div>
+          </div>
+          <span class="step-arrow">→</span>
+          <div class="flow-step" style="border-color:rgba(63,185,80,0.38)">
+            <div class="step-num">Step 6</div>
+            <div class="step-lbl" style="color:#3fb950">Submit Results</div>
+            <div class="step-sub">tool_outputs POST</div>
+          </div>
+          <span class="step-arrow">→</span>
+          <div class="flow-step" style="border-color:rgba(0,120,212,0.38)">
+            <div class="step-num">Step 7</div>
+            <div class="step-lbl" style="color:#58a6ff">Response</div>
+            <div class="step-sub">Markdown + cards</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Environment Variables ── -->
+    <div class="env-section">
+      <div class="env-title">Environment Configuration (19 Variables)</div>
+      <div class="env-row">
+        <span class="env-tag" style="background:rgba(63,185,80,0.15);color:#3fb950">Browser VITE_</span>
+        <span class="env-list">AGENT_ENDPOINT · AGENT_API_KEY · AGENT_MODEL_DEPLOYMENT · AZURE_OPENAI_* · AZURE_MAPS_KEY</span>
+      </div>
+      <div class="env-row">
+        <span class="env-tag" style="background:rgba(63,185,80,0.15);color:#3fb950">Browser cont.</span>
+        <span class="env-list">FOUNDRY_* · DATAVERSE_URL · D365_FO_URL · IOT_HUB_* · EMAIL_FLOW_URL · VAPID_PUBLIC_KEY</span>
+      </div>
+      <div class="env-row">
+        <span class="env-tag" style="background:rgba(248,81,73,0.15);color:#f85149">Server-only</span>
+        <span class="env-list">DATAVERSE_TENANT_ID · DATAVERSE_CLIENT_ID · DATAVERSE_CLIENT_SECRET</span>
+      </div>
+    </div>
+
+    <!-- ── Legend ── -->
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#0078d4"></div>Azure Platform</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#6b4fbb"></div>Azure AI Foundry</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#107c10"></div>Dynamics 365 F&amp;O</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f0883e"></div>Power Platform / Dataverse</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#0e566c"></div>Azure IoT Hub</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#3fb950"></div>Azure Key Vault</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#0078D4"></div>Traffic Agent</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#107C10"></div>Supply Chain Agent</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#CA5010"></div>Fleet Agent</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#8764B8"></div>Operations Agent</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#008575"></div>Field Service Agent</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#0E566C"></div>IoT &amp; Logistics Agent</div>
+    </div>
+
+  </div><!-- /canvas -->
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://aka.ms/azure/static-web-apps-cli/schema",
+  "configurations": {
+    "trafficiq": {
+      "appLocation": ".",
+      "outputLocation": "dist",
+      "apiLocation": "deploy/api",
+      "appBuildCommand": "npm run build",
+      "apiBuildCommand": "cd deploy/api && npm install && npm run build",
+      "run": "npm run dev",
+      "appDevserverUrl": "http://localhost:5173"
+    }
+  }
+}

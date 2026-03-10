@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrafficIQ — High-Level Architecture Flow</title>
+  <style>
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       HOW TO ADD REAL ICONS
+       ─────────────────────────────────────────────────
+       Each service box has a comment marking where to add an icon.
+       To replace a placeholder with a real icon image:
+         1. Find the comment:  <!-- ICON: Azure Maps -->
+         2. Remove the <span class="init"> element inside the box
+         3. Add:  <img src="icons/azure-maps.svg" alt="Azure Maps">
+       The CSS will auto-fit the image inside the box.
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+    :root {
+      --bg:           #071527;
+      --bg-grad:      linear-gradient(165deg, #081830 0%, #071020 60%, #040d18 100%);
+      --azure-bd:     rgba(0, 149, 255, 0.50);
+      --azure-hd:     rgba(0, 100, 200, 0.22);
+      --box-bd:       rgba(100, 175, 255, 0.28);
+      --row-bg:       rgba(255, 255, 255, 0.035);
+      --row-bd:       rgba(255, 255, 255, 0.07);
+      --text:         #d8eeff;
+      --muted:        #6a94bc;
+      --arrow:        #4ba3e8;
+      --head-txt:     #60c0ff;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", -apple-system, Roboto, sans-serif;
+      background: var(--bg-grad);
+      background-attachment: fixed;
+      color: var(--text);
+      font-size: 12px;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .hdr {
+      background: rgba(0, 30, 70, 0.80);
+      border-bottom: 1px solid var(--azure-bd);
+      padding: 14px 28px;
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .hdr h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.3px;
+    }
+    .hdr p  { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+    /* ── Outer diagram canvas ── */
+    .canvas {
+      padding: 18px 22px 22px;
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      min-height: calc(100vh - 68px);
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       LEFT  —  USER ACCESS COLUMN
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .col-users {
+      width: 100px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 22px;
+      border: 2px dashed rgba(255, 255, 255, 0.18);
+      border-radius: 12px;
+      padding: 30px 8px 16px;
+      position: relative;
+    }
+    .col-users .sec-title {
+      position: absolute;
+      top: 10px;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.9px;
+      color: var(--muted);
+    }
+
+    /* ── Horizontal flow connector ── */
+    .flow-h {
+      flex-shrink: 0;
+      width: 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+    }
+    .flow-h-line {
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--arrow));
+      position: relative;
+    }
+    .flow-h-line::after {
+      content: '';
+      position: absolute;
+      right: -1px; top: -4px;
+      border-left: 9px solid var(--arrow);
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+    .flow-h-label { font-size: 9px; color: var(--muted); white-space: nowrap; }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       AZURE  outer container
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .azure-wrap {
+      flex: 1;
+      border: 2px solid var(--azure-bd);
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .azure-bar {
+      background: var(--azure-hd);
+      border-bottom: 1px solid var(--azure-bd);
+      padding: 7px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .azure-bar .az-logo {
+      width: 26px; height: 26px;
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; flex-shrink: 0;
+      background: #0078D4;        /* fallback color while no icon */
+    }
+    /* ICON SLOT — same pattern used throughout */
+    .az-logo img,
+    .ibox img { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
+    .azure-bar .az-logo .init { font-size: 11px; font-weight: 900; color: #fff; }
+    .azure-bar span { font-size: 14px; font-weight: 700; color: var(--head-txt); }
+
+    /* ── 3-column inner grid ── */
+    .azure-body {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 116px 1fr 1.9fr;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       LEFT  —  IDENTITY / SECURITY
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .id-col {
+      border-right: 1px solid rgba(80, 150, 255, 0.18);
+      padding: 20px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      background: rgba(0,0,0,0.12);
+    }
+    .id-col .col-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       CENTER  —  TRAFFICIQ CORE SYSTEM
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .core-col {
+      border-right: 1px solid rgba(80, 150, 255, 0.15);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+    .zone-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--head-txt);
+      border: 1px dashed rgba(100, 176, 255, 0.45);
+      border-radius: 20px;
+      padding: 4px 14px;
+      margin-bottom: 14px;
+      text-align: center;
+      width: 100%;
+    }
+
+    /* Side-by-side row (SWA + Dataverse linked) */
+    .core-side-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+    .bidir {
+      font-size: 18px;
+      color: var(--arrow);
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    /* Vertical flow arrow */
+    .varrow {
+      height: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 1px 0;
+    }
+    .varrow .vl { width: 2px; flex: 1; background: var(--arrow); }
+    .varrow .vt {
+      width: 0; height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 6px solid var(--arrow);
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       RIGHT  —  SPECIALIST AGENTS
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .agents-col {
+      padding: 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .zone-badge-agents {
+      font-size: 11px;
+      font-weight: 700;
+      color: #70d870;
+      border: 1px dashed rgba(80, 200, 80, 0.40);
+      border-radius: 20px;
+      padding: 4px 14px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    /* Each agent row */
+    .arow {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 8px;
+      border-radius: 8px;
+      background: var(--row-bg);
+      border: 1px solid var(--row-bd);
+      margin-bottom: 7px;
+    }
+    .harrow {
+      font-size: 16px;
+      color: var(--arrow);
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       PLATFORM BAR  (bottom of azure)
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .platform-bar {
+      background: rgba(0,0,0,0.18);
+      border-top: 1px solid rgba(80,150,255,0.20);
+      padding: 10px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .pb-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+    }
+    .pb-sep {
+      width: 1px; height: 28px;
+      background: rgba(255,255,255,0.1);
+    }
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       ICON NODE  —  the universal reusable component
+
+       Usage:  <div class="inode [SIZE]">
+                 <div class="ibox" style="background: #COLOR">
+                   <!-- ICON: Product Name -->
+                   <span class="init">Abbr</span>
+                 </div>
+                 <span class="lbl">Label</span>
+                 <span class="sub">Sub-label</span>       <!-- optional -->
+               </div>
+
+       Sizes:  (default = 52px)   sm  = 40px   xs  = 32px
+       When adding icon: remove <span class="init">, add <img src="...">
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .inode {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+    .ibox {
+      width: 52px; height: 52px;
+      border-radius: 11px;
+      border: 1px solid rgba(255,255,255,0.14);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .ibox img { width: 100%; height: 100%; object-fit: contain; padding: 7px; }
+    .ibox .init {
+      font-size: 10px; font-weight: 700;
+      color: rgba(255,255,255,0.90);
+      text-align: center; line-height: 1.3;
+    }
+    .lbl { font-size: 11px; color: var(--text); text-align: center; max-width: 72px; line-height: 1.35; }
+    .sub { font-size: 9px;  color: var(--muted); text-align: center; max-width: 72px; margin-top: -2px; }
+
+    /* — small variant (agent nodes + service nodes inside agent rows) — */
+    .inode.sm .ibox  { width: 42px; height: 42px; border-radius: 9px; }
+    .inode.sm .ibox .init { font-size: 9px; }
+    .inode.sm .lbl   { font-size: 10px; max-width: 58px; }
+    .inode.sm .sub   { font-size: 8.5px; max-width: 58px; }
+
+    /* — extra-small (platform bar) — */
+    .inode.xs .ibox  { width: 34px; height: 34px; border-radius: 7px; }
+    .inode.xs .ibox .init { font-size: 8px; }
+    .inode.xs .lbl   { font-size: 9.5px; max-width: 52px; }
+
+    /* — large prominent nodes (TRAFI, Orchestrator, Foundry) — */
+    .inode.lg .ibox  { width: 62px; height: 62px; border-radius: 13px; border-width: 2px; }
+    .inode.lg .ibox .init { font-size: 10px; }
+    .inode.lg .lbl   { font-size: 12px; font-weight: 700; max-width: 84px; }
+    .inode.lg .sub   { max-width: 84px; }
+
+    /* Bigger icon boxes for the 6 specialist agent nodes */
+    .arow .inode:first-child .ibox {
+      width: 58px;
+      height: 58px;
+      border-radius: 12px;
+    }
+    .arow .inode:first-child .lbl { font-size: 11px; max-width: 72px; }
+    .arow .inode:first-child .sub { font-size: 9px; max-width: 72px; }  </style>
+</head>
+<body>
+
+  <!-- ════════════════ HEADER ════════════════ -->
+  <header class="hdr">
+    <div>
+      <h1>TrafficIQ — Multi-Agent Architecture</h1>
+      <p>High-level flow · Azure AI Foundry · 6 Specialist Agents · D365 F&amp;O MCP · Azure Maps · IoT Hub · Microsoft Dataverse</p>
+    </div>
+  </header>
+
+  <!-- ════════════════ CANVAS ════════════════ -->
+  <div class="canvas">
+
+    <!-- ╔══════════════╗ -->
+    <!-- ║  USER ACCESS ║ -->
+    <!-- ╚══════════════╝ -->
+    <div class="col-users">
+      <span class="sec-title">User Access</span>
+
+      <!-- Browser / React SPA -->
+      <div class="inode">
+        <div class="ibox" style="background:#133360">
+          <!-- ICON: Web Browser / React App -->
+          <img src="icons/browser.svg" alt="React SPA">
+        </div>
+        <span class="lbl">React SPA</span>
+        <span class="sub">Browser</span>
+      </div>
+
+      <!-- Power Apps -->
+      <div class="inode">
+        <div class="ibox" style="background:#3a1240">
+          <!-- ICON: Microsoft Power Apps -->
+          <img src="icons/power-apps.svg" alt="Power Apps">
+        </div>
+        <span class="lbl">Power Apps</span>
+        <span class="sub">Embedded mode</span>
+      </div>
+    </div><!-- /col-users -->
+
+    <!-- ── HTTPS connector ── -->
+    <div class="flow-h">
+      <div class="flow-h-line"></div>
+      <span class="flow-h-label">HTTPS</span>
+    </div>
+
+    <!-- ╔═══════════════════════════════════════════════════════════════════╗ -->
+    <!-- ║  AZURE                                                           ║ -->
+    <!-- ╚═══════════════════════════════════════════════════════════════════╝ -->
+    <div class="azure-wrap">
+
+      <!-- Azure top label bar -->
+      <div class="azure-bar">
+        <div class="az-logo">
+          <!-- ICON: Microsoft Azure logo -->
+          <img src="icons/azure.svg" alt="Azure">
+        </div>
+        <span>Azure</span>
+      </div>
+
+      <!-- Inner 3-column grid -->
+      <div class="azure-body">
+
+        <!-- ┌──────────────────────┐ -->
+        <!-- │  IDENTITY & SECURITY │ -->
+        <!-- └──────────────────────┘ -->
+        <div class="id-col">
+          <span class="col-label">Identity &amp;<br>Security</span>
+
+          <div class="inode">
+            <div class="ibox" style="background:#0a2a5a">
+              <!-- ICON: Microsoft Entra ID -->
+              <img src="icons/entra-id.svg" alt="Entra ID">
+            </div>
+            <span class="lbl">Microsoft<br>Entra ID</span>
+          </div>
+
+          <div class="inode">
+            <div class="ibox" style="background:#5a0808">
+              <!-- ICON: Azure Key Vault -->
+              <img src="icons/key-vault.svg" alt="Key Vault">
+            </div>
+            <span class="lbl">Azure Key<br>Vault</span>
+          </div>
+
+          <div class="inode">
+            <div class="ibox" style="background:#3a1800">
+              <!-- ICON: Azure Functions -->
+              <img src="icons/functions.svg" alt="Azure Functions">
+            </div>
+            <span class="lbl">Azure Functions</span>
+            <span class="sub">Dataverse proxy</span>
+          </div>
+        </div><!-- /id-col -->
+
+        <!-- ┌───────────────────────────────────────┐ -->
+        <!-- │  TRAFFICIQ CORE SYSTEM (dashed zone)   │ -->
+        <!-- └───────────────────────────────────────┘ -->
+        <div class="core-col">
+          <div class="zone-badge">TrafficIQ System</div>
+
+          <!-- Azure Static Web Apps + Dataverse (side-by-side, bidirectional) -->
+          <div class="core-side-row">
+            <div class="inode">
+              <div class="ibox" style="background:#0a2a50">
+                <!-- ICON: Azure Static Web Apps -->
+                <img src="icons/static-web-apps.svg" alt="Static Web Apps">
+              </div>
+              <span class="lbl">Azure Static<br>Web Apps</span>
+            </div>
+            <span class="bidir">⇔</span>
+            <div class="inode">
+              <div class="ibox" style="background:#3a0a3a">
+                <!-- ICON: Microsoft Dataverse -->
+                <img src="icons/dataverse.svg" alt="Dataverse">
+              </div>
+              <span class="lbl">Dataverse</span>
+              <span class="sub">State &amp; logs</span>
+            </div>
+          </div>
+
+          <!-- ↓ -->
+          <div class="varrow"><div class="vl"></div><div class="vt"></div></div>
+
+          <!-- TRAFI Chat UI -->
+          <div class="inode lg">
+            <div class="ibox" style="background:#0c2d60; border-color:#3080cc;">
+              <!-- ICON: TRAFI Chat AI identity (custom chat/robot icon) -->
+              <img src="icons/copilot-studio.svg" alt="TRAFI AI">
+            </div>
+            <span class="lbl" style="color:#60b8ff">TRAFI Chat UI</span>
+            <span class="sub">React · Chat Panel</span>
+          </div>
+
+          <!-- ↓ -->
+          <div class="varrow"><div class="vl"></div><div class="vt"></div></div>
+
+          <!-- Multi-Agent Orchestrator -->
+          <div class="inode lg">
+            <div class="ibox" style="background:#18083a; border-color:#6840b0;">
+              <!-- ICON: Multi-Agent Orchestrator (Durable Functions style) -->
+              <img src="icons/agent365.svg" alt="Multi-Agent Orchestrator">
+            </div>
+            <span class="lbl" style="color:#9868e8">MultiAgent<br>Orchestrator</span>
+            <span class="sub">Sticky → Keyword → LLM</span>
+          </div>
+
+          <!-- ↓ -->
+          <div class="varrow"><div class="vl"></div><div class="vt"></div></div>
+
+          <!-- Azure AI Foundry -->
+          <div class="inode lg">
+            <div class="ibox" style="background:#20083a; border-color:#5C1FC4;">
+              <!-- ICON: Azure AI Foundry -->
+              <img src="icons/ai-foundry.svg" alt="Azure AI Foundry">
+            </div>
+            <span class="lbl" style="color:#a080e8">Azure AI Foundry</span>
+            <span class="sub">GPT-4.1 · GPT-4.1-mini</span>
+          </div>
+        </div><!-- /core-col -->
+
+        <!-- ┌──────────────────────────────────────────────────────────┐ -->
+        <!-- │  SPECIALIST AGENTS SYSTEM (dashed zone)                  │ -->
+        <!-- └──────────────────────────────────────────────────────────┘ -->
+        <div class="agents-col">
+          <div class="zone-badge-agents">Specialist Agents</div>
+
+          <!-- ── Traffic Agent ── -->
+          <div class="arow">
+            <div class="inode sm">
+              <div class="ibox" style="background:#0c2850; border:2px solid #0078D4;">
+                <!-- ICON: Traffic / Vehicle agent -->
+                <img src="icons/azure-maps.svg" alt="Traffic Agent">
+              </div>
+              <span class="lbl" style="color:#4aa8ff;font-weight:700">Traffic</span>
+              <span class="sub">17 tools</span>
+            </div>
+            <span class="harrow">→</span>
+            <div class="inode sm">
+              <div class="ibox" style="background:#0a2040">
+                <!-- ICON: Azure Maps -->
+                <img src="icons/azure-maps.svg" alt="Azure Maps">
+              </div>
+              <span class="lbl">Azure Maps</span>
+            </div>
+            <span class="harrow">→</span>
+            <div class="inode sm">
+              <div class="ibox" style="background:#2a0830">
+                <!-- ICON: Microsoft Dataverse -->
+                <img src="icons/dataverse.svg" alt="Dataverse">
+              </div>
+              <span class="lbl">Dataverse</span>
+            </div>
+          </div>
+
+          <!-- ── Supply Chain Agent ── -->
+          <div class="arow">
+            <div class="inode sm">
+              <div class="ibox" style="background:#082010; border:2px solid #107C10;">
+                <!-- ICON: Supply Chain / Logistics agent -->
+                <img src="icons/d365-supply-chain.svg" alt="Supply Chain Agent">
+              </div>
+              <span class="lbl" style="color:#50cc50;font-weight:700">Supply Chain</span>
+              <span class="sub">11 tools</span>
+            </div>
+            <span class="harrow">→</span>
+            <div class="inode sm">
+              <div class="ibox" style="background:#002820">
+                <!-- ICON: Dynamics 365 Finance & Operations -->
+                <img src="icons/d365-fo.svg" alt="D365 F&O">
+              </div>
+              <span class="lbl">D365 F&amp;O</span>
+            </div>
+            <span class="harrow">→</span>
+            <div class="inode sm">
+              <div class="ibox" style="background:#0a2040">
+                <!-- ICON: Azure Maps -->
+                <img src="icons/azure-maps.svg" alt="Azure Maps">
+              </div>
+              <span class="lbl">Azure Maps</span>
+            </div>
+            <span class="harrow">→</span>
+            <div class="inode sm">
+              <div class="ibox" style="background:#2a0830">
+                <!-- ICON: Microsoft Dataverse -->
+                <img src="icons/dataverse.svg" alt="Dataverse">
+              </div>
+              <span class="lbl">Dataverse</span>
+            </div>
+          </div>
+
+          <!-- ── Fleet Agent ── -->
+          <div class="arow">
+            <div class="inode sm">
+              <div class="ibox" style="background:#301200; border:2px solid #CA5010;">
+                <!-- ICON: Fleet / Truck agent -->
+                <img src="icons/d365-fo.svg" alt="Fleet Agent">
+              </div>
+              <span class="lbl" style="color:#e07030;font-weight:700">Fleet</span>
+              <span class="sub">7 tools</span>
+            </div>
+            <span class="harrow">→</span>
+            <div class="inode sm">
+              <div class="ibox" style="background:#001c28">
+                <!-- ICON: Azure IoT Hub -->
+                <img src="icons/iot-hub.svg" alt="IoT Hub">
+              </div>
+              <span class="lbl">Azure<br>IoT Hub</span>
+            </div>
+            <span class="harrow">→</span>
+            <div class="inode sm">
+              <div class="ibox" style="background:#002820">
+                <!-- ICON: Dynamics 365 Finance & Operations -->
+                <img src="icons/d365-fo.svg" alt="D365 F&O">
+              </div>
+              <span class="lbl">D365 F&amp;O</span>
+            </div>
+            <span class="harrow">→</span>
+            <div class="inode sm">
+              <div class="ibox" style="background:#0a2040">
+                <!-- ICON: Azure Maps -->
+                <img src="icons/azure-maps.svg" alt="Azure Maps">
+              </div>
+              <span class="lbl">Azure Maps</span>
+            </div>
+          </div>
+
+          <!-- ── Operations Agent ── -->
+          <div class="arow">
+            <div class="inode sm">
+              <div class="ibox" style="background:#180c30; border:2px solid #8764B8;">
+                <!-- ICON: Operations / Wrench agent -->
+                <img src="icons/dynamics-365.svg" alt="Operations Agent">
+              </div>
+              <span class="lbl" style="color:#9870d8;font-weight:700">Operations</span>
+              <span class="sub">7 tools</span>
+            </div>
+            <span class="harrow">→</span>
+            <div class="inode sm">
+              <div class="ibox" style="background:#002820">
+                <!-- ICON: Dynamics 365 Finance & Operations -->
+                <img src="icons/d365-fo.svg" alt="D365 F&O">
+              </div>
+              <span class="lbl">D365 F&amp;O</span>
+            </div>
+            <span class="harrow">→</span>
+            <div class="inode sm">
+              <div class="ibox" style="background:#2a0830">
+                <!-- ICON: Microsoft Dataverse -->
+                <img src="icons/dataverse.svg" alt="Dataverse">
+              </div>
+              <span class="lbl">Dataverse</span>
+            </div>
+          </div>
+
+          <!-- ── Field Service Agent ── -->
+          <div class="arow">
+            <div class="inode sm">
+              <div class="ibox" style="background:#002018; border:2px solid #008575;">
+                <!-- ICON: Field Service / Tools agent -->
+                <img src="icons/d365-field-service.svg" alt="Field Service Agent">
+              </div>
+              <span class="lbl" style="color:#30c0a0;font-weight:700">Field Service</span>
+              <span class="sub">7 tools</span>
+            </div>
+            <span class="harrow">→</span>
+            <div class="inode sm">
+              <div class="ibox" style="background:#002820">
+                <!-- ICON: Dynamics 365 Finance & Operations -->
+                <img src="icons/d365-fo.svg" alt="D365 F&O">
+              </div>
+              <span class="lbl">D365 F&amp;O</span>
+            </div>
+            <span class="harrow">→</span>
+            <div class="inode sm">
+              <div class="ibox" style="background:#0a2040">
+                <!-- ICON: Azure Maps -->
+                <img src="icons/azure-maps.svg" alt="Azure Maps">
+              </div>
+              <span class="lbl">Azure Maps</span>
+            </div>
+            <span class="harrow">→</span>
+            <div class="inode sm">
+              <div class="ibox" style="background:#2a0830">
+                <!-- ICON: Microsoft Dataverse -->
+                <img src="icons/dataverse.svg" alt="Dataverse">
+              </div>
+              <span class="lbl">Dataverse</span>
+            </div>
+          </div>
+
+          <!-- ── IoT & Logistics Agent ── -->
+          <div class="arow">
+            <div class="inode sm">
+              <div class="ibox" style="background:#001820; border:2px solid #0E566C;">
+                <!-- ICON: IoT & Logistics / Satellite agent -->
+                <img src="icons/iot-hub.svg" alt="IoT Logistics Agent">
+              </div>
+              <span class="lbl" style="color:#2898b8;font-weight:700">IoT &amp; Logistics</span>
+              <span class="sub">7 tools</span>
+            </div>
+            <span class="harrow">→</span>
+            <div class="inode sm">
+              <div class="ibox" style="background:#001c28">
+                <!-- ICON: Azure IoT Hub -->
+                <img src="icons/iot-hub.svg" alt="IoT Hub">
+              </div>
+              <span class="lbl">Azure<br>IoT Hub</span>
+            </div>
+            <span class="harrow">→</span>
+            <div class="inode sm">
+              <div class="ibox" style="background:#002820">
+                <!-- ICON: Dynamics 365 Finance & Operations -->
+                <img src="icons/d365-fo.svg" alt="D365 F&O">
+              </div>
+              <span class="lbl">D365 F&amp;O</span>
+            </div>
+            <span class="harrow">→</span>
+            <div class="inode sm">
+              <div class="ibox" style="background:#0a2040">
+                <!-- ICON: Azure Maps -->
+                <img src="icons/azure-maps.svg" alt="Azure Maps">
+              </div>
+              <span class="lbl">Azure Maps</span>
+            </div>
+          </div>
+
+        </div><!-- /agents-col -->
+      </div><!-- /azure-body -->
+
+      <!-- ── Platform bar (bottom of Azure box) ── -->
+      <div class="platform-bar">
+        <span class="pb-label">Shared Platform Services</span>
+        <div class="pb-sep"></div>
+
+        <div class="inode xs">
+          <div class="ibox" style="background:#3a0a3a">
+            <!-- ICON: Microsoft Dataverse -->
+            <img src="icons/dataverse.svg" alt="Dataverse">
+          </div>
+          <span class="lbl">Microsoft Dataverse</span>
+        </div>
+
+        <div class="inode xs">
+          <div class="ibox" style="background:#002820">
+            <!-- ICON: Dynamics 365 Finance & Operations MCP -->
+            <img src="icons/d365-fo.svg" alt="D365 F&O">
+          </div>
+          <span class="lbl">D365 F&amp;O MCP</span>
+        </div>
+
+        <div class="inode xs">
+          <div class="ibox" style="background:#0a2040">
+            <!-- ICON: Azure Maps -->
+            <img src="icons/azure-maps.svg" alt="Azure Maps">
+          </div>
+          <span class="lbl">Azure Maps</span>
+        </div>
+
+        <div class="inode xs">
+          <div class="ibox" style="background:#001c28">
+            <!-- ICON: Azure IoT Hub -->
+            <img src="icons/iot-hub.svg" alt="IoT Hub">
+          </div>
+          <span class="lbl">Azure IoT Hub</span>
+        </div>
+
+        <div class="inode xs">
+          <div class="ibox" style="background:#001840">
+            <!-- ICON: Power Automate -->
+            <img src="icons/power-automate.svg" alt="Power Automate">
+          </div>
+          <span class="lbl">Power Automate</span>
+        </div>
+
+        <div class="inode xs">
+          <div class="ibox" style="background:#0a2a5a">
+            <!-- ICON: Microsoft Entra ID -->
+            <img src="icons/entra-id.svg" alt="Entra ID">
+          </div>
+          <span class="lbl">Entra ID</span>
+        </div>
+
+        <div class="inode xs">
+          <div class="ibox" style="background:#5a0808">
+            <!-- ICON: Azure Key Vault -->
+            <img src="icons/key-vault.svg" alt="Key Vault">
+          </div>
+          <span class="lbl">Key Vault</span>
+        </div>
+
+      </div><!-- /platform-bar -->
+    </div><!-- /azure-wrap -->
+  </div><!-- /canvas -->
+
+</body>
+</html>
