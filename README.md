@@ -1,10 +1,21 @@
 ﻿# TrafficIQ - Supply Chain Transport Intelligence
 
-An AI-powered supply chain transport intelligence platform with a **multi-agent architecture** — 6 specialist AI agents with **56 tools** connecting **D365 Warehouse Management**, **Azure IoT Hub fleet telemetry**, and **real-time traffic intelligence** to optimize goods delivery routes. Built with **Microsoft Foundry Agent Service**, **D365 F&O MCP**, **Azure Maps**, and **Azure IoT Hub**.
 
-Features **weather overlays**, **POI search along routes**, **marker clustering**, **truck vs car route comparison**, **isochrone (reachable range) analysis**, **GPS snap-to-road correction**, and **interactive map controls** across all map views.
+
+<p align="center">
+    <a href="https://techcommunity.microsoft.com/blog/azure-events/announcing-the-ai-dev-days-hackathon-winners/4513528"><strong>🏆 AI Dev Days Hackathon — Best Use of Microsoft Foundry Project</strong></a>
+</p>
 
 ---
+
+<p align="center">
+    <img src="https://img.shields.io/badge/Supply%20Chain-Transport%20Intelligence-0F766E?style=for-the-badge" alt="Supply Chain Transport Intelligence">
+    <img src="https://img.shields.io/badge/Real--Time%20Traffic-Aware%20Routing-2563EB?style=for-the-badge" alt="Real-Time Traffic Aware Routing">
+    <img src="https://img.shields.io/badge/Fleet%20Logistics-Optimization-F59E0B?style=for-the-badge" alt="Fleet Logistics Optimization">
+    <img src="https://img.shields.io/badge/Microsoft%20Foundry-AI%20Agents-111827?style=for-the-badge" alt="Microsoft Foundry AI Agents">
+</p>
+
+TrafficIQ: Supply Chain Transport Intelligence was recognized globally for winning the Best Use of Microsoft Foundry Project award at the AI Dev Days Hackathon. 
 
 ## Problem Statement
 
